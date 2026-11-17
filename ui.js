@@ -8,7 +8,7 @@ const money=v=>v==null||!isFinite(v)?"–":"$"+v.toFixed(2);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let logText="";logSink=s=>{logText=(logText+s+"\n").slice(-20000);const p=$("#logPre");if(p){p.textContent=logText;p.scrollTop=p.scrollHeight}};
 
-let link=null,caps=null,running=false,trip=null,live={},wake=null,trips=[],fills=[],model=buildModel([],[]),coast=null,ecu={};
+let hold=false,sheetCleanup=null,link=null,caps=null,running=false,trip=null,live={},wake=null,trips=[],fills=[],model=buildModel([],[]),coast=null,ecu={};
 const K=()=>model.k||1;
 const curCents=()=>{const l=model.fillStats.last;if(l)return l.cents;const c=JSON.parse(localStorage.getItem("cp-prices")||"null");if(!c)return null;const m=Object.keys(c.o).sort().pop();return m?c.o[m]:null};
 
@@ -34,6 +34,7 @@ async function start(kind){
 async function loop(){
   const t0=performance.now(),t1=TIER1.filter(k=>caps.keys.includes(k)),t2=caps.keys.filter(k=>!t1.includes(k)),g=caps.batch?6:1;let i=0,n=0,hzT=t0,myTrip=trip;
   while(running&&link&&trip===myTrip){
+    if(hold){await sleep(150);continue}
     await readKeys(t1);
     if(t2.length){await readKeys(t2.slice(i,i+g));i=i+g>=t2.length?0:i+g}
     if(!caps.keys.includes("volt")&&n%10===0){const v=parseFloat(await link.cmd("ATRV",1500));if(isFinite(v))live.volt=v}
@@ -190,7 +191,7 @@ function renderTrends(){const n=model.norm;$("#trends").innerHTML=[["restV","#ff
 const DTC_TEXT={P0011:"Intake camshaft timing over-advanced",P0014:"Exhaust camshaft timing over-advanced",P0016:"Crankshaft / camshaft position mismatch",P0101:"Air flow sensor reading out of range",P0106:"Manifold pressure sensor out of range",P0113:"Intake air temperature sensor reading high",P0128:"Engine not reaching normal temperature (thermostat)",P0131:"Oxygen sensor low voltage (bank 1, sensor 1)",P0133:"Oxygen sensor slow response (bank 1, sensor 1)",P0135:"Oxygen sensor heater fault (bank 1, sensor 1)",P0141:"Oxygen sensor heater fault (bank 1, sensor 2)",P0171:"Fuel mixture too lean",P0172:"Fuel mixture too rich",P0300:"Random misfire detected",P0301:"Misfire in cylinder 1",P0302:"Misfire in cylinder 2",P0303:"Misfire in cylinder 3",P0304:"Misfire in cylinder 4",P0325:"Knock sensor circuit fault",P0335:"Crankshaft position sensor fault",P0340:"Camshaft position sensor fault",P0420:"Catalytic converter efficiency below threshold",P0441:"Fuel vapour system purge flow fault",P0442:"Fuel vapour system small leak",P0455:"Fuel vapour system large leak (check fuel cap)",P0456:"Fuel vapour system very small leak",P0500:"Vehicle speed sensor fault",P0507:"Idle speed higher than expected",P0562:"System voltage low",P0700:"Transmission control system fault"};
 
 /* ---------- lab ---------- */
-const LAB=[["sensors","Live sensors",()=>caps?caps.keys.length+" available":"connect first"],["maps","Engine maps",()=>Object.keys(model.grid).length+" cells filled"],["dyno","Power and performance",()=>model.best.pull?fx(model.best.pull.peak)+" kW peak":"no full-throttle pull yet"],["coast","Coast-down test",()=>`CdA ${fx(S.cda,2)} · Crr ${fx(S.crr,3)}`],["mon","On-board monitor tests",()=>"Mode 06"],["ecu","Engine computer",()=>ecu.vin||"VIN, calibration, protocol"],["data","Export and backup",()=>trips.length+" trips"],["term","Terminal and log",()=>""],["veh","Vehicle and settings",()=>`${S.mass} kg · ${S.disp} L · ${GEO[S.geo]}`]];
+const LAB=[["sensors","Live sensors",()=>caps?caps.keys.length+" available":"connect first"],["maps","Engine maps",()=>Object.keys(model.grid).length+" cells filled"],["dyno","Power and performance",()=>model.best.pull?fx(model.best.pull.peak)+" kW peak":"no full-throttle pull yet"],["coast","Coast-down test",()=>`CdA ${fx(S.cda,2)} · Crr ${fx(S.crr,3)}`],["mon","On-board monitor tests",()=>"Mode 06"],["uds","Manufacturer data scanner",()=>Object.keys(JSON.parse(localStorage.getItem("cp-dids")||"{}")).length+" identifiers found"],["ecu","Engine computer",()=>ecu.vin||"VIN, calibration, protocol"],["data","Export and backup",()=>trips.length+" trips"],["term","Terminal and log",()=>""],["veh","Vehicle and settings",()=>`${S.mass} kg · ${S.disp} L · ${GEO[S.geo]}`]];
 function renderLab(){$("#labList").innerHTML=LAB.map(([id,n,d])=>`<div class="row tap" data-id="${id}"><span>${n}</span><span>${d()}</span></div>`).join("")}
 $("#labList").onclick=e=>{const r=e.target.closest(".row");if(r)labOpen[r.dataset.id]()};
 let sheetTimer=null;
@@ -218,6 +219,28 @@ const labOpen={
      if(!fit||fit.cda<0.3||fit.cda>1.5||fit.crr<0.004||fit.crr>0.03){$("#coastR").innerHTML=`<div class="row"><div>Result not usable<small>${fit?`CdA ${fx(fit.cda,2)}, Crr ${fx(fit.crr,3)} are outside a believable range. `:""}Needs a longer, steadier coast in neutral on a flat road.</small></div></div>`;return}
      $("#coastR").innerHTML=`<div class="row"><span>Drag area (CdA)</span><span>${fx(fit.cda,3)} m²</span></div><div class="row"><span>Rolling resistance (Crr)</span><span>${fx(fit.crr,4)}</span></div><div class="row"><span>Samples used</span><span>${fit.n}</span></div>`+`<div class="row tap" id="useFit"><span>Use these values</span><span></span></div>`;
      $("#useFit").onclick=()=>{S.cda=Math.round(fit.cda*1000)/1000;S.crr=Math.round(fit.crr*10000)/10000;saveS();renderLab();alert("Saved. New trips use the measured values.")}}},
+ uds(){const saved=JSON.parse(localStorage.getItem("cp-dids")||"{}"),save=()=>{localStorage.setItem("cp-dids",JSON.stringify(saved));renderLab()};let stopF=false,busy=false,prev={};
+   openSheet(`<h2>Manufacturer data scanner</h2><span class="note" style="font-size:14px;color:var(--soft)">Asks one of the car's computers which manufacturer data identifiers it will answer, using read-only requests. Nothing is written to the car. Do it parked; live trip logging pauses while it runs.</span>
+   <div class="g2"><label class="field"><span>Computer</span><select id="uEcu"><option value="7E0">Engine (7E0)</option><option value="7E1">Transmission (7E1)</option><option value="7E2">7E2</option><option value="7E3">7E3</option><option value="7E4">7E4</option><option value="7E5">7E5</option></select></label>
+   <label class="field"><span>Service</span><select id="uSvc"><option value="22">22 · by identifier</option><option value="21">21 · data blocks</option></select></label>
+   <label class="field"><span>From (hex)</span><input type="text" id="uFrom" value="F180" autocapitalize="characters" class="mono"></label><label class="field"><span>To (hex)</span><input type="text" id="uTo" value="F1FF" autocapitalize="characters" class="mono"></label></div>
+   <button class="btn go" id="uGo">Start scan</button><button class="btn" id="uWatch">Watch found identifiers</button><button class="btn" id="uCsv">Export found (CSV)</button><span class="note" id="uStat">Identification data usually sits at F180 to F1FF. Live values vary by maker, so try ranges such as 0100 to 01FF, 1000 to 10FF or 2000 to 20FF, and service 21 from 00 to FF.</span><div class="rows" id="uRows"></div>`);
+   const ecu=()=>$("#uEcu").value,ascii=h=>bytesOf(h).map(c=>c>=32&&c<127?String.fromCharCode(c):"·").join("");
+   const draw=chg=>{const ks=Object.keys(saved).filter(k=>k.startsWith(ecu()+":")).sort();$("#uRows").innerHTML=ks.length?ks.map(k=>{const e=saved[k],b=e.hex.match(/../g)||[],p=(prev[k]||"").match(/../g)||[];
+       return `<div class="row tap" data-k="${k}"><div><b class="mono">${k.slice(4,6)} ${k.slice(6)}</b> ${esc(e.name||"")}<small class="mono" style="word-break:break-all">${b.map((x,i)=>chg&&p.length&&p[i]!==x?`<span style="color:var(--orange)">${x}</span>`:x).join(" ")}<br>${esc(ascii(e.hex))}</small></div><span></span></div>`}).join(""):`<div class="empty">Nothing found for this computer yet.</div>`};
+   const ask=async req=>{const p=payloads(await link.cmd(req,2500)).join(""),pos=(parseInt(req.slice(0,2),16)+0x40).toString(16).toUpperCase()+req.slice(2),i=p.indexOf(pos);return i>=0?p.slice(i+pos.length):null};
+   const begin=async()=>{if(!link){alert("Connect the scanner first.");return false}if(!["6","8"].includes(caps.proto.slice(-1))){alert("This scanner mode only works on 11-bit CAN cars.");return false}if(busy)return false;busy=true;stopF=false;hold=true;await sleep(200);log("ATSH"+ecu()+" → "+await link.cmd("ATSH"+ecu()));return true};
+   const end=async()=>{if(link)await link.cmd("ATSH7DF");hold=false;busy=false};
+   sheetCleanup=()=>{stopF=true};draw();$("#uEcu").onchange=()=>draw();
+   $("#uSvc").onchange=()=>{const s=$("#uSvc").value==="21";$("#uFrom").value=s?"00":"F180";$("#uTo").value=s?"FF":"F1FF"};
+   $("#uGo").onclick=async()=>{if(busy){stopF=true;return}const svc=$("#uSvc").value,w=svc==="21"?2:4,a=parseInt($("#uFrom").value,16),b=Math.min(parseInt($("#uTo").value,16),a+2047,svc==="21"?255:65535);if(!(a>=0&&b>=a))return alert("Enter a valid hex range.");
+     if(!await begin())return;const e=ecu();$("#uGo").textContent="Stop";let found=0;
+     try{for(let id=a;id<=b&&!stopF&&link;id++){const hx=id.toString(16).toUpperCase().padStart(w,"0"),d=await ask(svc+hx);if(d!=null){const k=e+":"+svc+hx;saved[k]={hex:d,name:saved[k]?saved[k].name:""};found++;save();draw()}
+         if($("#uStat"))$("#uStat").textContent=`Scanning ${svc} ${hx} · ${id-a+1} of ${b-a+1} · ${found} answered`}}finally{await end();if($("#uGo")){$("#uGo").textContent="Start scan";$("#uStat").textContent=`Scan ${stopF?"stopped":"finished"}: ${found} identifier${found===1?"":"s"} answered.`}}};
+   $("#uWatch").onclick=async()=>{if(busy){stopF=true;return}const e=ecu(),ks=Object.keys(saved).filter(k=>k.startsWith(e+":"));if(!ks.length)return alert("Scan first so there is something to watch.");if(!await begin())return;$("#uWatch").textContent="Stop watching";
+     try{while(!stopF&&link){for(const k of ks){if(stopF)break;const d=await ask(k.slice(4));if(d!=null){prev[k]=prev[k]||saved[k].hex;if(saved[k].hex!==d){prev[k]=saved[k].hex;saved[k].hex=d}}}if($("#uRows"))draw(true);if($("#uStat"))$("#uStat").textContent="Watching: bytes that changed are highlighted. Rev the engine or switch something on and see what moves.";await sleep(link.demo?300:50)}}finally{await end();save();if($("#uWatch"))$("#uWatch").textContent="Watch found identifiers"}};
+   $("#uRows").onclick=e=>{const r=e.target.closest(".row");if(!r||busy)return;const k=r.dataset.k,n=prompt("Name for "+k.slice(4,6)+" "+k.slice(6)+" (leave empty to remove the name)",saved[k].name||"");if(n!=null){saved[k].name=n.trim();save();draw()}};
+   $("#uCsv").onclick=()=>{const ks=Object.keys(saved).sort();if(!ks.length)return alert("Nothing found yet.");saveFile("car-pulse-identifiers.csv","computer,service,identifier,name,bytes_hex,ascii\n"+ks.map(k=>[k.slice(0,3),k.slice(4,6),k.slice(6),'"'+(saved[k].name||"").replace(/"/g,"'")+'"',saved[k].hex,'"'+ascii(saved[k].hex).replace(/"/g,"'")+'"'].join(",")).join("\n"),"text/csv")}},
  async mon(){openSheet(`<h2>On-board monitor tests</h2><span class="note">The engine computer's own self-test results (Mode 06): misfire counters, catalyst, oxygen sensors and more, each with its pass limits. Values are raw counts from the computer.</span><div class="rows" id="monR"><div class="empty">${link?"Reading…":"Connect the scanner first."}</div></div>`);if(!link)return;
    let mids=[];for(const base of [0,0x20,0x40,0x60,0x80,0xA0]){const got=parseBits(await link.cmd("06"+h2(base),4000),6,base);mids=mids.concat(got.filter(m=>m%0x20));if(!got.includes(base+0x20))break}
    const out=[];for(const m of mids)out.push(...parse06(await link.cmd("06"+h2(m),5000)));
@@ -245,8 +268,8 @@ const labOpen={
 /* ---------- navigation ---------- */
 function tab(t){document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id==="t-"+t));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("main").scrollTop=0;if(t==="fuel")renderFuel();if(t==="health")renderTrends();if(t==="lab")renderLab()}
 $("#nav").onclick=e=>{const b=e.target.closest("button");if(b)tab(b.dataset.t)};
-function openSheet(html){clearInterval(sheetTimer);$("#sheetBody").onchange=null;$("#sheetBody").innerHTML=html;$("#sheet").classList.add("on");$("#sheetBody").scrollTop=0}
-function closeSheet(){clearInterval(sheetTimer);$("#sheet").classList.remove("on");$("#sheetBody").innerHTML=""}
+function openSheet(html){if(sheetCleanup){sheetCleanup();sheetCleanup=null}clearInterval(sheetTimer);$("#sheetBody").onchange=null;$("#sheetBody").innerHTML=html;$("#sheet").classList.add("on");$("#sheetBody").scrollTop=0}
+function closeSheet(){if(sheetCleanup){sheetCleanup();sheetCleanup=null}clearInterval(sheetTimer);$("#sheet").classList.remove("on");$("#sheetBody").innerHTML=""}
 $("#bBack").onclick=closeSheet;
 $("#bConnect").onclick=()=>start("ble");$("#bDemo").onclick=()=>start("demo");$("#bEnd").onclick=()=>stop(false);
 $("#fDate").value=today();renderDrive();renderLab();refresh().then(fillPrice);

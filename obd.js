@@ -99,6 +99,10 @@ class DemoLink{
   mask(base){const b=[0,0,0,0];for(const p of this.sup)if(p>base&&p<=base+32){const i=p-base-1;b[i>>3]|=0x80>>(i&7)}return b.map(h2).join("")}
   async cmd(c){c=c.trim().toUpperCase();const s=this.st();
     if(c.startsWith("AT"))return c==="ATRV"?s.volt.toFixed(1)+"V":c==="ATDPN"?"A6":c==="ATZ"||c==="ATI"?"ELM327 v1.5 (demo)":"OK";
+    if(c==="22F190")return "014\r0:62F190444D4F\r1:43415250554C53\r2:45303030303031";
+    if(c==="220101")return "620101"+h4(s.rpm*4)+h2(s.cool+40)+h2(s.thr*2.55)+"00FF";
+    if(c==="2101")return "6101"+h2(s.v)+h4(s.rpm)+h2(s.load);
+    if(/^2[12][0-9A-F]+$/.test(c))return "7F"+c.slice(0,2)+"31";
     if(c==="03")return "43"+h2(this.codes.length)+this.codes.map(x=>h2(("PCBU".indexOf(x[0])<<6)|(+x[1]<<4)|parseInt(x[2],16))+x.slice(3)).join("");
     if(c==="07")return "4700";if(c==="0A")return "4A00";if(c==="04"){this.codes=[];return "44"}
     if(c==="0902")return "014\r0:490201444D4F\r1:43415250554C53\r2:45303030303031";
