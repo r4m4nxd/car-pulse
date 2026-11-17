@@ -38,6 +38,7 @@ async function loop(){
     if(hold){await sleep(150);continue}
     await readKeys(t1);
     if(t2.length){await readKeys(t2.slice(i,i+g));i=i+g>=t2.length?0:i+g}
+    if(!running||!link||!caps)return;
     if(!caps.keys.includes("volt")&&n%10===0){const v=parseFloat(await link.cmd("ATRV",1500));if(isFinite(v))live.volt=v}
     if(!running||!link)return;
     live.lph=live.rpm>300?lphRaw(live):live.rpm!=null?0:null;
