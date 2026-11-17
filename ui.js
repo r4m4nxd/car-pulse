@@ -22,7 +22,7 @@ async function start(kind){
   if(link)return;
   if(kind==="ble"&&!navigator.bluetooth)return showConnectHelp();
   const L=kind==="demo"?new DemoLink():new BleLink();
-  setPill("","Connecting…");$("#bConnect").disabled=true;log("--- connect "+new Date().toLocaleTimeString()+" · "+navigator.userAgent.slice(0,90));
+  setPill("","Connecting…");$("#bConnect").disabled=true;log("--- connect · app version "+window.CP_VERSION+" · "+new Date().toLocaleTimeString()+" · "+navigator.userAgent.slice(0,90));
   try{await L.open();caps=await initLink(L);caps.miss=0;link=L;L.onclose=()=>stop(true)}
   catch(e){const m=(e&&(e.message||e.name))||String(e);log("Connect failed: "+m);try{L.close()}catch(_){}link=null;setPill("","Not connected");$("#bConnect").disabled=false;
     if(!/NotFoundError|cancel/i.test((e&&e.name)+" "+m))alert(m+"\n\nMake sure Car Scanner and the Vpuck app are fully closed (the scanner talks to one app at a time), then try again. The details are in Lab → Terminal and log.");return}
@@ -274,5 +274,5 @@ function openSheet(html){if(sheetCleanup){sheetCleanup();sheetCleanup=null}clear
 function closeSheet(){if(sheetCleanup){sheetCleanup();sheetCleanup=null}clearInterval(sheetTimer);$("#sheet").classList.remove("on");$("#sheetBody").innerHTML=""}
 $("#bBack").onclick=closeSheet;
 $("#bConnect").onclick=()=>start("ble");$("#bDemo").onclick=()=>start("demo");$("#bEnd").onclick=()=>stop(false);
-$("#fDate").value=today();renderDrive();renderLab();refresh().then(fillPrice);
+$("#verNote").textContent="Car Pulse version "+window.CP_VERSION+" · all data stays on this phone.";$("#fDate").value=today();renderDrive();renderLab();refresh().then(fillPrice);
 try{if(location.protocol.startsWith("http")&&navigator.serviceWorker)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
