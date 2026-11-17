@@ -66,18 +66,26 @@ function parse06(resp){const out=[];for(const p of payloads(resp)){if(!p.startsW
 
 let logSink=()=>{};const log=s=>logSink(s);
 const SERVICES=[0xfff0,0xffe0,0x18f0,0xae30,0xabf0,"e7810a71-73ae-499d-8c15-faa9aef0c3f2","49535343-fe7d-4ae5-8fa9-9fafd205e455","6e400001-b5a3-f393-e0a9-e50e24dcca9e"];
+const CHARS=[0xfff1,0xfff2,0xffe1,0x2af0,0x2af1,0xae01,0xae02,0xabf1,0xabf2,"bef8d6c9-9c21-4c9e-b632-bd58c1009f9f","49535343-1e4d-4bd9-ba61-23c647249616","49535343-8841-43f4-a8d4-ecbe34729bb3","6e400002-b5a3-f393-e0a9-e50e24dcca9e","6e400003-b5a3-f393-e0a9-e50e24dcca9e"];
 class BleLink{
   constructor(){this.buf="";this.q=Promise.resolve();this.waiter=null;this.dec=new TextDecoder();this.enc=new TextEncoder()}
   async open(){
-    this.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SERVICES});
+    // each step is logged so a failure says where it happened; lookups fall back to known IDs because some browsers cannot list everything
+    const step=async(name,fn)=>{try{const r=await fn();log(name+": ok");return r}catch(e){const m=(e&&(e.message||e.name))||String(e);log(name+": FAILED · "+m);const x=new Error(name+" failed: "+m);x.name=(e&&e.name)||"Error";throw x}};
+    this.dev=await step("Pick device",()=>navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SERVICES}));
     log("Device: "+(this.dev.name||"unnamed"));
-    this.dev.addEventListener("gattserverdisconnected",()=>{log("Scanner disconnected");this.onclose&&this.onclose()});
-    const srv=await this.dev.gatt.connect();const svcs=await srv.getPrimaryServices();
-    for(const s of svcs){const cs=await s.getCharacteristics();log("Service "+s.uuid+" · "+cs.length+" channels");
+    try{this.dev.addEventListener("gattserverdisconnected",()=>{log("Scanner disconnected");this.onclose&&this.onclose()})}catch(e){}
+    const srv=await step("Connect",()=>this.dev.gatt.connect());
+    let svcs=[];try{svcs=await srv.getPrimaryServices()}catch(e){log("List services: not available · "+((e&&e.message)||e))}
+    if(!svcs||!svcs.length){svcs=[];for(const u of SERVICES){try{svcs.push(await srv.getPrimaryService(u))}catch(e){}}}
+    log("Services: "+(svcs.map(s=>s.uuid).join(", ")||"none"));
+    for(const s of svcs){let cs=[];try{cs=await s.getCharacteristics()}catch(e){}
+      if(!cs||!cs.length){cs=[];for(const u of CHARS){try{cs.push(await s.getCharacteristic(u))}catch(e){}}}
+      log("Service "+s.uuid+" · channels "+cs.map(c=>c.uuid.slice(4,8)+(c.properties.notify||c.properties.indicate?"n":"")+(c.properties.write||c.properties.writeWithoutResponse?"w":"")).join(" "));
       const n=cs.find(c=>c.properties.notify||c.properties.indicate),w=cs.find(c=>c.properties.writeWithoutResponse||c.properties.write);
       if(n&&w){this.n=n;this.w=w;break}}
-    if(!this.n)throw new Error("This device did not offer a data channel the app recognises.");
-    await this.n.startNotifications();
+    if(!this.n)throw new Error("Connected, but found no data channel on this scanner. Send the log from Lab → Terminal and log.");
+    await step("Start notifications",()=>this.n.startNotifications());
     this.n.addEventListener("characteristicvaluechanged",e=>{this.buf+=this.dec.decode(e.target.value);if(this.buf.includes(">")&&this.waiter){const r=this.buf.replace(/>/g,"").trim();this.buf="";const w=this.waiter;this.waiter=null;w(r)}});
   }
   cmd(c,ms=5000){const run=()=>new Promise(async res=>{this.buf="";const t=setTimeout(()=>{this.waiter=null;res("")},ms);this.waiter=r=>{clearTimeout(t);res(r)};

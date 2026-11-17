@@ -14,17 +14,18 @@ const curCents=()=>{const l=model.fillStats.last;if(l)return l.cents;const c=JSO
 
 /* ---------- live session ---------- */
 async function readKeys(keys){
-  if(!keys.length)return;
-  if(caps.batch){for(let i=0;i<keys.length;i+=6){const r=parse01(await link.cmd("01"+keys.slice(i,i+6).map(k=>P[k][0]).join(""),1500));
-      if(Object.keys(r).length){Object.assign(live,r);caps.miss=0}else if(++caps.miss>6){caps.batch=false;log("Multi-request stopped answering; using single requests")}}}
-  else for(const k of keys){if(!running&&!link)return;Object.assign(live,parse01(await link.cmd("01"+P[k][0]+caps.one,1500)))}}
+  const c=caps,L=link;if(!keys.length||!c||!L)return;
+  if(c.batch){for(let i=0;i<keys.length;i+=6){const r=parse01(await L.cmd("01"+keys.slice(i,i+6).map(k=>P[k][0]).join(""),1500));if(link!==L)return;
+      if(Object.keys(r).length){Object.assign(live,r);c.miss=0}else if(++c.miss>6){c.batch=false;log("Multi-request stopped answering; using single requests")}}}
+  else for(const k of keys){const r=parse01(await L.cmd("01"+P[k][0]+c.one,1500));if(link!==L)return;Object.assign(live,r)}}
 async function start(kind){
   if(link)return;
   if(kind==="ble"&&!navigator.bluetooth)return showConnectHelp();
   const L=kind==="demo"?new DemoLink():new BleLink();
-  setPill("","Connecting…");$("#bConnect").disabled=true;
+  setPill("","Connecting…");$("#bConnect").disabled=true;log("--- connect "+new Date().toLocaleTimeString()+" · "+navigator.userAgent.slice(0,90));
   try{await L.open();caps=await initLink(L);caps.miss=0;link=L;L.onclose=()=>stop(true)}
-  catch(e){log("Connect failed: "+e.message);try{L.close()}catch(_){}link=null;setPill("","Not connected");$("#bConnect").disabled=false;if(e.name!=="NotFoundError")alert(e.message||"Could not connect to the scanner.");return}
+  catch(e){const m=(e&&(e.message||e.name))||String(e);log("Connect failed: "+m);try{L.close()}catch(_){}link=null;setPill("","Not connected");$("#bConnect").disabled=false;
+    if(!/NotFoundError|cancel/i.test((e&&e.name)+" "+m))alert(m+"\n\nMake sure Car Scanner and the Vpuck app are fully closed (the scanner talks to one app at a time), then try again. The details are in Lab → Terminal and log.");return}
   running=true;live={};trip=new Trip(Date.now(),kind==="demo"?"demo":"live");
   setPill(kind==="demo"?"demo":"live",kind==="demo"?"Demo drive":(L.dev&&L.dev.name)||"Connected");
   $("#connectBox").style.display="none";$("#bEnd").style.display="";$("#bConnect").disabled=false;
