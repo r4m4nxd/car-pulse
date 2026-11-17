@@ -65,14 +65,21 @@ function parse06(resp){const out=[];for(const p of payloads(resp)){if(!p.startsW
   return out}
 
 let logSink=()=>{};const log=s=>logSink(s);
-const SERVICES=[0xfff0,0xffe0,0x18f0,0xae30,0xabf0,"e7810a71-73ae-499d-8c15-faa9aef0c3f2","49535343-fe7d-4ae5-8fa9-9fafd205e455","6e400001-b5a3-f393-e0a9-e50e24dcca9e"];
-const CHARS=[0xfff1,0xfff2,0xffe1,0x2af0,0x2af1,0xae01,0xae02,0xabf1,0xabf2,"bef8d6c9-9c21-4c9e-b632-bd58c1009f9f","49535343-1e4d-4bd9-ba61-23c647249616","49535343-8841-43f4-a8d4-ecbe34729bb3","6e400002-b5a3-f393-e0a9-e50e24dcca9e","6e400003-b5a3-f393-e0a9-e50e24dcca9e"];
+const U16=n=>"0000"+n.toString(16).padStart(4,"0")+"-0000-1000-8000-00805f9b34fb"; // some browsers only accept full-length IDs
+const SERVICES=[0xfff0,0xffe0,0x18f0,0xae30,0xabf0].map(U16).concat(["e7810a71-73ae-499d-8c15-faa9aef0c3f2","49535343-fe7d-4ae5-8fa9-9fafd205e455","6e400001-b5a3-f393-e0a9-e50e24dcca9e"]);
+const CHARS=[0xfff1,0xfff2,0xffe1,0x2af0,0x2af1,0xae01,0xae02,0xabf1,0xabf2].map(U16).concat(["bef8d6c9-9c21-4c9e-b632-bd58c1009f9f","49535343-1e4d-4bd9-ba61-23c647249616","49535343-8841-43f4-a8d4-ecbe34729bb3","6e400002-b5a3-f393-e0a9-e50e24dcca9e","6e400003-b5a3-f393-e0a9-e50e24dcca9e"]);
 class BleLink{
   constructor(){this.buf="";this.q=Promise.resolve();this.waiter=null;this.dec=new TextDecoder();this.enc=new TextEncoder()}
   async open(){
     // each step is logged so a failure says where it happened; lookups fall back to known IDs because some browsers cannot list everything
     const step=async(name,fn)=>{try{const r=await fn();log(name+": ok");return r}catch(e){const m=(e&&(e.message||e.name))||String(e);log(name+": FAILED · "+m);const x=new Error(name+" failed: "+m);x.name=(e&&e.name)||"Error";throw x}};
-    this.dev=await step("Pick device",()=>navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SERVICES}));
+    // browsers differ in which request shapes they accept, so try several before giving up
+    const NAMES=["VEEPEAK","Veepeak","OBD","Vgate","IOS-Vlink","V-LINK","vLinker","ELM","Android-Vlink","Viecar","KONNWEI","UniCarScan","Carista"].map(namePrefix=>({namePrefix}));
+    const tries=[["any device",{acceptAllDevices:true,optionalServices:SERVICES}],["by name",{filters:NAMES,optionalServices:SERVICES}],["by service",{filters:SERVICES.slice(0,3).map(u=>({services:[u]})),optionalServices:SERVICES}],["any device, no service list",{acceptAllDevices:true}]];
+    let lastErr=null;
+    for(const [label,opt] of tries){try{this.dev=await navigator.bluetooth.requestDevice(opt);log("Pick device ("+label+"): ok");break}
+      catch(e){lastErr=e;const m=(e&&(e.message||e.name))||String(e);log("Pick device ("+label+"): FAILED · "+m+" ["+typeof e+"]");if(/cancel|NotFoundError|denied|NotAllowed/i.test(m+" "+(e&&e.name)))break}}
+    if(!this.dev){const m=(lastErr&&(lastErr.message||lastErr.name))||String(lastErr);const x=new Error("The browser would not open the scanner list ("+m+").");x.name=(lastErr&&lastErr.name)||"Error";throw x}
     log("Device: "+(this.dev.name||"unnamed"));
     try{this.dev.addEventListener("gattserverdisconnected",()=>{log("Scanner disconnected");this.onclose&&this.onclose()})}catch(e){}
     const srv=await step("Connect",()=>this.dev.gatt.connect());
