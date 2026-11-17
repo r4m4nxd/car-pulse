@@ -4,446 +4,189 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Car Pulse</title>
-<meta name="theme-color" content="#0a0d12">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Car Pulse">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
-:root{--bg:#0a0d12;--panel:#131822;--panel2:#1a2130;--line:#232b3a;--text:#e9eef6;--muted:#8a95a9;--accent:#35e0a1;--blue:#5aa9ff;--warn:#ffb547;--bad:#ff5d6c}
+:root{--bg:#000;--card:#1c1c1e;--fill:#2c2c2e;--line:#2c2c2e;--text:#fff;--sub:#98989f;--soft:#d1d1d6;--green:#30d158;--blue:#0a84ff;--orange:#ff9f0a;--red:#ff453a;--purple:#bf5af2}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.35 -apple-system,"SF Pro Display",BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
 body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
-h1{font-size:20px;margin:0;letter-spacing:-.3px}
-h2{font-size:13px;margin:22px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
-main{flex:1;overflow-y:auto;padding:0 16px 24px;-webkit-overflow-scrolling:touch}
-section{display:none}section.on{display:block}
-.pill{font-size:12px;padding:5px 10px;border-radius:99px;background:var(--panel2);color:var(--muted);display:flex;align-items:center;gap:6px}
-.pill i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
-.pill.live{color:var(--accent)}.pill.live i{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-.pill.demo{color:var(--warn)}.pill.demo i{background:var(--warn)}
-nav{display:flex;border-top:1px solid var(--line);background:#0d1118;padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;background:none;border:0;color:var(--muted);padding:9px 0 8px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}
-nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-nav button.on{color:var(--accent)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
-.gauges{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;align-items:end}
-.gauge{position:relative}
-.gauge svg{width:100%;display:block}
-.gauge .track{stroke:var(--panel2)}
-.gauge path{fill:none;stroke-width:10;stroke-linecap:round}
-.gauge .val{transition:stroke-dasharray .35s ease-out}
-.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:8%}
-.gauge b{font-size:54px;font-weight:700;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
-.gauge.sm b{font-size:32px;letter-spacing:-1px}
-.gauge small,.tile small,.kpi small{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
-.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
-.kpi b{display:block;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
-.kpi b span{font-size:12px;color:var(--muted);font-weight:500;margin-left:2px;letter-spacing:0}
-.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
-.tile b{display:block;font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}
-.tile b span{font-size:12px;color:var(--muted);font-weight:500;margin-left:2px}
-.bar{height:4px;border-radius:2px;background:var(--panel2);margin-top:7px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--blue);border-radius:2px;transition:width .35s}
-.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:650;background:var(--accent);color:#04130d;margin-top:10px}
-.btn.ghost{background:var(--panel2);color:var(--text)}
-.btn.danger{background:#3a1820;color:var(--bad)}
-.btn:disabled{opacity:.45}
-.btn.sm{display:inline-block;width:auto;padding:8px 14px;font-size:13px;margin:0}
-.note{color:var(--muted);font-size:13px;margin:8px 2px}
-.list{display:flex;flex-direction:column;gap:8px}
-.trip{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
-.trip b{font-size:15px}.trip small{display:block;color:var(--muted);font-size:12px}
-.trip .r{text-align:right;white-space:nowrap}
-.bars{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:10px}
-.bars div{flex:1;min-width:0;background:var(--blue);border-radius:4px 4px 0 0;opacity:.9;position:relative}
-.bars div.best{background:var(--accent)}
-.bars span{position:absolute;top:-17px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)}
-.bars{padding-top:18px}
-.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:5px}
-.chip{display:inline-block;font-size:11px;font-weight:650;padding:3px 8px;border-radius:99px;background:#12301f;color:var(--accent)}
-.chip.warn{background:#3a2a10;color:var(--warn)}.chip.bad{background:#3a1820;color:var(--bad)}.chip.na{background:var(--panel2);color:var(--muted)}
-.hrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
-.hrow:last-child{border-bottom:0}.hrow small{display:block;color:var(--muted);font-size:12px}
-.code{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:16px}
-label{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
-label:last-child{border-bottom:0}
-input[type=number],input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 10px;font-size:15px;width:96px;text-align:right}
-#termIn{flex:1;width:auto;text-align:left;font-family:ui-monospace,Menlo,monospace}
-pre{background:#070a0e;border:1px solid var(--line);border-radius:12px;padding:10px;font:12px/1.45 ui-monospace,Menlo,monospace;color:#b9c4d6;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:8px 0 0}
-canvas{width:100%;height:120px;display:block}
-.sheet{position:fixed;inset:0;background:var(--bg);z-index:5;display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
-.sheet.on{display:flex}
-.sheet .body{flex:1;overflow-y:auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
-.back{background:none;border:0;color:var(--accent);font-size:16px;padding:0}
-ol{padding-left:20px;margin:8px 0}li{margin:6px 0}
+main{flex:1;overflow-y:auto;padding:14px 20px 28px;-webkit-overflow-scrolling:touch}
+section{display:none;flex-direction:column;gap:12px}section.on{display:flex}
+h1{font-size:34px;font-weight:700;letter-spacing:-.6px;margin:0}
+.head{display:flex;justify-content:space-between;align-items:center}
+.sub{color:var(--sub);font-size:14px}
+.cap{font-size:12px;color:var(--sub);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.pill{display:flex;align-items:center;gap:7px;background:var(--card);color:var(--sub);font-size:13px;font-weight:600;padding:7px 12px;border-radius:99px;border:0}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--sub)}
+.pill.live{background:#0f2e1a;color:var(--green)}.pill.live i{background:var(--green)}
+.pill.demo{background:#3a2706;color:var(--orange)}.pill.demo i{background:var(--orange)}
+.card{background:var(--card);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card.big{border-radius:28px;padding:18px}
+.rows{background:var(--card);border-radius:22px;padding:2px 16px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);min-height:46px}
+.row:last-child{border-bottom:0}.row small{display:block;color:var(--sub);font-size:13px}
+.row>span:last-child,.row>.v{color:var(--sub);text-align:right}
+.row.tap{cursor:pointer}.row.tap>span:last-child::after{content:" ›";color:#636366}
+.k3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{background:var(--card);border-radius:20px;padding:13px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi small{font-size:12px;color:var(--sub);font-weight:600}.kpi b{font-size:22px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap}.kpi span{font-size:12px;color:var(--sub)}
+.hero{display:flex;align-items:center;gap:16px}
+.ring{position:relative;flex-shrink:0}.ring svg{display:block}.ring circle{fill:none;stroke-linecap:round}.ring .tr{stroke:var(--fill)}.ring .va{transition:stroke-dasharray .3s ease-out}
+.ring div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring b{font-weight:700;line-height:1;font-variant-numeric:tabular-nums}.ring small{font-size:13px;color:var(--sub);font-weight:600;margin-top:2px}
+.side{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0}
+.side b{font-size:26px;font-weight:700;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.side b span{font-size:13px;color:var(--sub);font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}.bar i{display:block;height:100%;border-radius:3px;width:0;transition:width .3s}
+.tip{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:14px;padding:10px 12px;font-size:13px;color:var(--soft)}
+.tip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.btn{border:0;border-radius:16px;min-height:50px;padding:0 16px;background:var(--fill);color:#fff;font:600 17px inherit;font-family:inherit;width:100%}
+.btn.go{background:var(--green);color:#04210e;font-weight:700}.btn.danger{color:var(--red)}.btn:disabled{opacity:.4}
+.btn.sm{min-height:36px;font-size:14px;width:auto;border-radius:12px;padding:0 14px}
+.big-num{font-size:40px;font-weight:700;letter-spacing:-1.4px;line-height:1;font-variant-numeric:tabular-nums}
+.bars{display:grid;gap:10px;align-items:end;height:104px}
+.bars div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:104px}
+.bars span{font-size:12px;color:var(--soft)}.bars i{display:block;width:100%;border-radius:8px;background:var(--blue);min-height:4px}
+.bars .best span{color:var(--green);font-weight:700}.bars .best i{background:var(--green)}
+.axis{display:grid;gap:10px;font-size:11px;color:var(--sub);text-align:center}
+.stack{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--fill)}.stack i{display:block;height:100%}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px;color:var(--soft)}.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.chip{font-size:12px;font-weight:700;color:var(--green);background:#0f2e1a;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.chip.warn{color:var(--orange);background:#3a2706}.chip.bad{color:var(--red);background:#3a1512}.chip.na{color:var(--sub);background:var(--fill)}
+.field{background:var(--fill);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.field span{font-size:12px;color:#b0b0b8;font-weight:600}
+.field input,.field select{background:none;border:0;padding:0;width:100%;color:#fff;font:700 22px inherit;font-family:inherit;letter-spacing:-.4px;outline:0;min-width:0;-webkit-appearance:none}
+.field input[type=date]{font-size:17px;min-height:28px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.note{font-size:13px;color:var(--sub);line-height:1.4}
+canvas{width:100%;height:130px;display:block}
+.heat{display:grid;gap:2px}.heat div{aspect-ratio:1.25;border-radius:3px;background:#161618;font-size:8px;display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden}
+.seg{display:flex;background:var(--fill);border-radius:10px;padding:2px}.seg button{flex:1;border:0;background:none;color:var(--soft);font:600 13px inherit;font-family:inherit;padding:7px 2px;border-radius:8px}.seg button.on{background:#636366;color:#fff}
+pre{background:#0c0c0d;border-radius:14px;padding:10px;font:12px/1.45 ui-monospace,Menlo,monospace;color:#b9c4d6;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:0}
+nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#121214;border-top:1px solid var(--line);padding:8px 8px calc(6px + env(safe-area-inset-bottom))}
+nav button{background:none;border:0;color:var(--sub);font:600 11px inherit;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px}
+nav button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--green)}
+.sheet{position:fixed;inset:0;background:var(--bg);z-index:5;display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}.sheet.on{display:flex}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px}
+.sheet .body{flex:1;overflow-y:auto;padding:0 20px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.back{background:none;border:0;color:var(--blue);font:17px inherit;font-family:inherit;padding:0;min-height:44px}
+h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0}
+.empty{text-align:center;color:var(--sub);padding:26px 10px}
 a{color:var(--blue)}
-.empty{text-align:center;color:var(--muted);padding:36px 12px}
+.mono{font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
-<header><h1 id="title">Drive</h1><div class="pill" id="pill"><i></i><span>Not connected</span></div></header>
 <main>
 <section id="t-drive" class="on">
-  <div class="gauges">
-    <div class="gauge"><svg viewBox="0 0 200 170"><path class="track" d="M34 150 A85 85 0 1 1 166 150" pathLength="100"/><path class="val" id="gSpeed" d="M34 150 A85 85 0 1 1 166 150" pathLength="100" stroke="#35e0a1" stroke-dasharray="0 100"/></svg><div class="num"><b id="vSpeed">–</b><small>km/h</small></div></div>
-    <div class="gauge sm"><svg viewBox="0 0 200 170"><path class="track" d="M34 150 A85 85 0 1 1 166 150" pathLength="100"/><path class="val" id="gRpm" d="M34 150 A85 85 0 1 1 166 150" pathLength="100" stroke="#5aa9ff" stroke-dasharray="0 100"/></svg><div class="num"><b id="vRpm">–</b><small>rpm</small></div></div>
-  </div>
-  <div class="row3">
-    <div class="kpi"><small id="lNow">Now</small><b id="vNow">–</b></div>
-    <div class="kpi"><small>Trip avg</small><b id="vAvg">–</b></div>
-    <div class="kpi"><small>Range</small><b id="vRange">–</b></div>
-  </div>
-  <div id="connectBox">
-    <button class="btn" id="bConnect">Connect scanner</button>
-    <button class="btn ghost" id="bDemo">Try a demo drive</button>
-  </div>
-  <div id="tripBox" style="display:none">
-    <h2>This trip</h2>
-    <div class="row3" style="margin-top:0">
-      <div class="kpi"><small>Distance</small><b id="vDist">0<span>km</span></b></div>
-      <div class="kpi"><small>Time</small><b id="vTime">0:00</b></div>
-      <div class="kpi"><small>Fuel</small><b id="vFuel">0<span>L</span></b></div>
+  <div class="head"><h1>Drive</h1><button class="pill" id="pill"><i></i><span>Not connected</span></button></div>
+  <div class="card big">
+    <div class="hero">
+      <div class="ring" style="width:176px;height:176px"><svg viewBox="0 0 176 176" width="176" height="176"><circle class="tr" cx="88" cy="88" r="76" stroke-width="14"/><circle class="va" id="gSpeed" cx="88" cy="88" r="76" stroke-width="14" stroke="#30d158" stroke-dasharray="0 478" transform="rotate(-90 88 88)"/></svg><div><b id="vSpeed" style="font-size:60px;letter-spacing:-2.5px">–</b><small>km/h</small></div></div>
+      <div class="side">
+        <div><div class="cap">Engine</div><b id="vRpm">– <span>rpm</span></b><div class="bar"><i id="bRpm" style="background:var(--blue)"></i></div></div>
+        <div><div class="cap" id="lNow">Using now</div><b id="vNow">– <span>L/100 km</span></b><div class="bar"><i id="bNow" style="background:var(--orange)"></i></div></div>
+      </div>
     </div>
-    <button class="btn ghost" id="bEnd">End trip &amp; disconnect</button>
+    <div class="tip" id="tip">Connect the scanner to start.</div>
   </div>
-  <h2>Engine</h2>
-  <div class="tiles" id="tiles"></div>
-  <p class="note">Fuel figures are estimates worked out from engine sensors, not a measurement from the fuel pump.</p>
+  <div class="k3">
+    <div class="kpi"><small>Trip avg</small><b id="vAvg">–</b><span>L/100 km</span></div>
+    <div class="kpi"><small>Range</small><b id="vRange">–</b><span>km left</span></div>
+    <div class="kpi"><small>Trip cost</small><b id="vCost">–</b><span>so far</span></div>
+  </div>
+  <div class="k3">
+    <div class="kpi"><small>Power</small><b id="vKw">–</b><span>kW at crank, est.</span></div>
+    <div class="kpi"><small>Load</small><b id="vLoad">–</b><span>% of max</span></div>
+    <div class="kpi"><small>Ignition</small><b id="vTim">–</b><span>° advance</span></div>
+  </div>
+  <div class="rows">
+    <div class="row"><span>This trip</span><span id="rTrip">–</span></div>
+    <div class="row"><span>Coolant</span><span id="rCool">–</span></div>
+    <div class="row"><span>Battery</span><span id="rVolt">–</span></div>
+    <div class="row"><span>Fuel level</span><span id="rFuel">–</span></div>
+    <div class="row"><span>Data rate</span><span id="rHz">–</span></div>
+  </div>
+  <div id="connectBox" style="display:flex;flex-direction:column;gap:10px"><button class="btn go" id="bConnect">Connect scanner</button><button class="btn" id="bDemo">Try a demo drive</button></div>
+  <button class="btn" id="bEnd" style="display:none">End trip</button>
 </section>
 
-<section id="t-trips">
-  <div id="tripsEmpty" class="empty">No trips yet.<br>Connect the scanner and drive, and each trip is saved here automatically.</div>
-  <div id="tripsBody" style="display:none">
-    <div class="row3" style="margin-top:0">
-      <div class="kpi"><small>Distance</small><b id="aDist">–</b></div>
-      <div class="kpi"><small>Average</small><b id="aAvg">–</b></div>
-      <div class="kpi"><small>Smoothness</small><b id="aScore">–</b></div>
+<section id="t-insights">
+  <div><h1>Insights</h1><div class="sub" id="iSub">Nothing learned yet</div></div>
+  <div id="iEmpty" class="card"><div class="empty">Drive with the scanner connected and this fills in by itself: your real fuel use, your car's normal readings, and anything that drifts.</div></div>
+  <div id="iBody" style="display:none;flex-direction:column;gap:12px">
+    <div class="card big" style="flex-direction:row;align-items:center;gap:18px">
+      <div class="ring" style="width:112px;height:112px"><svg viewBox="0 0 112 112" width="112" height="112"><circle class="tr" cx="56" cy="56" r="47" stroke-width="12"/><circle class="va" id="gScore" cx="56" cy="56" r="47" stroke-width="12" stroke="#30d158" stroke-dasharray="0 295" transform="rotate(-90 56 56)"/></svg><div><b id="vScore" style="font-size:34px;letter-spacing:-1px">–</b><small style="font-size:11px">score</small></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:17px" id="scoreT">–</b><span class="sub" id="scoreD"></span></div>
     </div>
-    <div class="row3">
-      <div class="kpi"><small>Fuel used</small><b id="aFuel">–</b></div>
-      <div class="kpi"><small>Fuel cost</small><b id="aCost">–</b></div>
-      <div class="kpi"><small>Idle time</small><b id="aIdle">–</b></div>
-    </div>
-    <h2>Fuel use per trip (L/100 km)</h2>
-    <div class="card"><div class="bars" id="bars"></div><div class="axis"><span id="barsFrom"></span><span id="barsTo">latest</span></div></div>
-    <h2>Trips</h2>
-    <div class="list" id="tripList"></div>
+    <div class="card" id="alertCard" style="display:none"></div>
+    <div class="card"><div class="head"><span class="cap">Your real fuel use</span><span id="calTag" style="font-size:12px;font-weight:600;color:var(--sub)"></span></div>
+      <div><span class="big-num" id="vReal">–</span> <span class="sub" style="font-weight:600">L/100 km</span></div><span class="sub" id="calNote"></span></div>
+    <div class="card"><span class="cap">Fuel use by speed · L/100 km</span><div class="bars" id="bandBars"></div><div class="axis" id="bandAxis"></div></div>
+    <div class="card"><span class="cap">Where the fuel energy went</span><div class="stack" id="eStack"></div><div class="legend" id="eLegend"></div><span class="note">Aero and rolling losses come from a road-load model using your mass, CdA and rolling resistance settings, on a flat road.</span></div>
+    <div class="rows" id="normRows"></div>
+    <div class="cap" style="margin-top:6px">Trips</div>
+    <div class="rows" id="tripList"></div>
   </div>
+</section>
+
+<section id="t-fuel">
+  <h1>Fuel</h1>
+  <div class="card big" style="gap:12px">
+    <div class="head"><b style="font-size:20px;letter-spacing:-.3px">I fuelled up</b></div>
+    <div class="g2">
+      <label class="field"><span>Date</span><input type="date" id="fDate"></label>
+      <label class="field"><span>Litres added</span><input type="text" inputmode="decimal" id="fL" placeholder="0.0"></label>
+      <label class="field"><span>Price · ¢ per litre</span><input type="text" inputmode="decimal" id="fP" placeholder="–"></label>
+      <label class="field"><span>Total paid · $</span><input type="text" inputmode="decimal" id="fT" placeholder="0.00"></label>
+      <label class="field"><span>Odometer · km (optional)</span><input type="text" inputmode="decimal" id="fO" placeholder="–"></label>
+      <label class="field"><span>Filled to full?</span><select id="fFull"><option value="1">Yes</option><option value="0">No</option></select></label>
+    </div>
+    <span class="note" id="fNote">Price fills in from the city average for that month. Change it, or type the total you paid.</span>
+    <button class="btn go" id="bFill">Save fill-up</button>
+  </div>
+  <div class="k3">
+    <div class="kpi"><small>This month</small><b id="fuMonth">–</b><span id="fuMonthL">no fill-ups</span></div>
+    <div class="kpi"><small>Per km</small><b id="fuKm">–</b><span>fuel cost</span></div>
+    <div class="kpi"><small>Next fill</small><b id="fuNext">–</b><span>predicted</span></div>
+  </div>
+  <div class="rows" id="fillList"><div class="empty">No fill-ups saved yet.</div></div>
 </section>
 
 <section id="t-health">
-  <button class="btn" id="bHealth">Run health check</button>
-  <p class="note" id="healthNote">Connect the scanner with the ignition on, then run the check.</p>
-  <div class="card" id="healthCard" style="display:none"></div>
-  <h2>Fault codes</h2>
-  <div class="card" id="dtcCard"><div class="empty" style="padding:14px">Not checked yet.</div></div>
+  <h1>Health</h1>
+  <div class="card big" style="flex-direction:row;align-items:center;gap:16px" id="verdict"><div style="display:flex;flex-direction:column;gap:4px"><b style="font-size:20px;letter-spacing:-.3px" id="verT">Not checked yet</b><span class="sub" id="verD">Connect the scanner with the ignition on, then run the check.</span></div></div>
+  <button class="btn go" id="bHealth">Run health check</button>
+  <div class="rows" id="hRows" style="display:none"></div>
+  <div class="cap" id="dtcCap" style="display:none;margin-top:6px">Fault codes</div>
+  <div class="rows" id="dtcRows" style="display:none"></div>
   <button class="btn danger" id="bClear" style="display:none">Clear fault codes</button>
-  <h2>Vehicle</h2>
-  <div class="card" id="vehCard"><div class="empty" style="padding:14px">Not read yet.</div></div>
+  <div class="cap" id="rdyCap" style="display:none;margin-top:6px">Emission monitors</div>
+  <div class="rows" id="rdyRows" style="display:none"></div>
+  <div id="trends" style="display:flex;flex-direction:column;gap:12px"></div>
 </section>
 
-<section id="t-more">
-  <h2 style="margin-top:6px">Settings</h2>
-  <div class="card">
-    <label>Fuel tank (litres)<input type="number" id="sTank" inputmode="decimal"></label>
-    <label>Engine size (litres)<input type="number" id="sDisp" inputmode="decimal" step="0.1"></label>
-    <label>Fuel price ($ per litre)<input type="number" id="sPrice" inputmode="decimal" step="0.01" placeholder="optional"></label>
-  </div>
-  <h2>Backup</h2>
-  <div class="card">
-    <button class="btn ghost" id="bBackup" style="margin-top:0">Save backup file</button>
-    <input type="file" id="fRestore" accept=".json,application/json" style="display:none">
-    <button class="btn ghost" id="bRestore">Restore backup</button>
-  </div>
-  <h2>Scanner terminal</h2>
-  <div class="card">
-    <div style="display:flex;gap:8px"><input type="text" id="termIn" placeholder="e.g. ATI or 010C" autocapitalize="characters" autocomplete="off"><button class="btn sm" id="bSend">Send</button></div>
-    <pre id="log">Connection log appears here.</pre>
-    <button class="btn ghost sm" id="bCopy" style="margin-top:8px">Copy log</button>
-  </div>
-  <p class="note">Car Pulse · all data stays on this phone.</p>
+<section id="t-lab">
+  <div><h1>Lab</h1><div class="sub">Everything the engine computer exposes</div></div>
+  <div class="rows" id="labList"></div>
+  <span class="note">Car Pulse · all data stays on this phone.</span>
 </section>
 </main>
 <nav id="nav">
-  <button data-t="drive" class="on"><svg viewBox="0 0 24 24"><path d="M4 18a9 9 0 1 1 16 0"/><path d="M12 14l4-5"/></svg>Drive</button>
-  <button data-t="trips"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Trips</button>
+  <button data-t="drive" class="on"><svg viewBox="0 0 24 24"><path d="M4 18a9 9 0 1 1 16 0M12 14l4-5"/></svg>Drive</button>
+  <button data-t="insights"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Insights</button>
+  <button data-t="fuel"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>Fuel</button>
   <button data-t="health"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Health</button>
-  <button data-t="more"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>More</button>
+  <button data-t="lab"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.800 3h10.400a2 2 0 0 0 1.800-3l-5-9V3"/></svg>Lab</button>
 </nav>
-
-<div class="sheet" id="sheet"><header><button class="back" id="bBack">‹ Back</button><div id="sheetAct"></div></header><div class="body" id="sheetBody"></div></div>
-
-<script>
-"use strict";
-const $=s=>document.querySelector(s), el=(h)=>{const d=document.createElement("div");d.innerHTML=h;return d.firstElementChild};
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const fx=(v,d=0)=>v==null||!isFinite(v)?"–":v.toFixed(d);
-const hms=s=>{s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}h ${String(m).padStart(2,"0")}m`:`${m}:${String(s%60).padStart(2,"0")}`};
-
-/* ---------- settings ---------- */
-const S=Object.assign({tank:47,disp:2.0,price:""},JSON.parse(localStorage.getItem("cp-settings")||"{}"));
-const saveS=()=>localStorage.setItem("cp-settings",JSON.stringify(S));
-
-/* ---------- trip storage (IndexedDB) ---------- */
-const openDb=()=>new Promise((res,rej)=>{const r=indexedDB.open("carpulse",1);r.onupgradeneeded=()=>r.result.createObjectStore("trips",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const dbDo=async(mode,fn)=>{const d=await openDb();return new Promise((res,rej)=>{const t=d.transaction("trips",mode),rq=fn(t.objectStore("trips"));t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})};
-const Trips={all:async()=>(await dbDo("readonly",s=>s.getAll())).sort((a,b)=>b.start-a.start),put:t=>dbDo("readwrite",s=>s.put(t)),del:id=>dbDo("readwrite",s=>s.delete(id))};
-
-/* ---------- OBD decoding ---------- */
-const PIDS={
- load:{p:"04",f:a=>a*100/255}, coolant:{p:"05",f:a=>a-40}, stft:{p:"06",f:a=>(a-128)*100/128}, ltft:{p:"07",f:a=>(a-128)*100/128},
- map:{p:"0B",f:a=>a}, rpm:{p:"0C",f:(a,b)=>(a*256+b)/4}, speed:{p:"0D",f:a=>a}, timing:{p:"0E",f:a=>a/2-64}, iat:{p:"0F",f:a=>a-40},
- maf:{p:"10",f:(a,b)=>(a*256+b)/100}, throttle:{p:"11",f:a=>a*100/255}, fuel:{p:"2F",f:a=>a*100/255}, volt:{p:"42",f:(a,b)=>(a*256+b)/1000},
- ambient:{p:"46",f:a=>a-40}, oil:{p:"5C",f:a=>a-40}, rate:{p:"5E",f:(a,b)=>(a*256+b)/20}
-};
-const FAST=["rpm","speed","throttle","load","maf","map","rate"], SLOW=["coolant","fuel","iat","volt","stft","ltft","timing","ambient","oil"];
-const lines=r=>r.replace(/SEARCHING\.\.\./g,"").split(/[\r\n]+/).map(s=>s.replace(/\s+/g,"").toUpperCase()).filter(Boolean);
-function parsePid(resp,pid){
-  for(const l of lines(resp)){const k="41"+pid;let i=l.startsWith(k)?0:l.indexOf(k);if(i<0)continue;
-    const hex=l.slice(i+4),b=[];for(let j=0;j+1<hex.length;j+=2)b.push(parseInt(hex.substr(j,2),16));
-    if(b.length&&!b.some(isNaN))return b}
-  return null}
-function payloads(resp){
-  const ls=lines(resp).filter(l=>!/^(NODATA|OK|\?|STOPPED|UNABLETOCONNECT|CANERROR|BUSINIT.*|.*ERROR.*)$/.test(l));
-  if(ls.some(l=>/^[0-9A-F]:/.test(l)))return [ls.filter(l=>/^[0-9A-F]:/.test(l)).map(l=>l.slice(2)).join("")];
-  return ls}
-function parseDtcs(resp,mode,can){
-  const out=[],hdr=(0x40+mode).toString(16).toUpperCase();
-  for(const p of payloads(resp)){if(!p.startsWith(hdr))continue;let d=p.slice(2);if(can)d=d.slice(2);
-    for(let k=0;k+3<d.length;k+=4){const w=d.substr(k,4);if(w==="0000")continue;const n=parseInt(w[0],16);out.push("PCBU"[n>>2]+(n&3)+w.slice(1))}}
-  return [...new Set(out)]}
-function parseVin(resp){const p=payloads(resp).join("");const i=p.indexOf("4902");if(i<0)return null;let s="";const h=p.slice(i+6);
-  for(let k=0;k+1<h.length;k+=2){const c=parseInt(h.substr(k,2),16);if(c>=48&&c<=90)s+=String.fromCharCode(c)}return s.length>=17?s.slice(-17):null}
-function parseSupported(resp,base){const b=parsePid(resp,base.toString(16).toUpperCase().padStart(2,"0"));const out=[];if(!b||b.length<4)return out;
-  for(let i=0;i<32;i++)if(b[i>>3]&(0x80>>(i&7)))out.push(base+i+1);return out}
-/* air flow from manifold pressure when the car has no air-flow sensor */
-const mafFromMap=(rpm,map,iatC,disp)=>rpm*map/(iatC+273.15)/120*0.85*disp*28.97/8.314;
-const lphFrom=d=>d.rate!=null?d.rate:d.maf!=null?d.maf*3600/(14.7*745):(d.rpm!=null&&d.map!=null)?mafFromMap(d.rpm,d.map,d.iat??25,S.disp)*3600/(14.7*745):null;
-
-const DTC_TEXT={P0011:"Intake camshaft timing over-advanced",P0014:"Exhaust camshaft timing over-advanced",P0016:"Crankshaft / camshaft position mismatch",P0101:"Air flow sensor reading out of range",P0113:"Intake air temperature sensor reading high",P0128:"Engine not reaching normal temperature (thermostat)",P0131:"Oxygen sensor low voltage (bank 1, sensor 1)",P0133:"Oxygen sensor slow response (bank 1, sensor 1)",P0135:"Oxygen sensor heater fault (bank 1, sensor 1)",P0141:"Oxygen sensor heater fault (bank 1, sensor 2)",P0171:"Fuel mixture too lean",P0172:"Fuel mixture too rich",P0300:"Random misfire detected",P0301:"Misfire in cylinder 1",P0302:"Misfire in cylinder 2",P0303:"Misfire in cylinder 3",P0304:"Misfire in cylinder 4",P0325:"Knock sensor circuit fault",P0335:"Crankshaft position sensor fault",P0340:"Camshaft position sensor fault",P0401:"Exhaust gas recirculation flow too low",P0420:"Catalytic converter efficiency below threshold",P0441:"Fuel vapour system purge flow fault",P0442:"Fuel vapour system small leak",P0455:"Fuel vapour system large leak (check fuel cap)",P0456:"Fuel vapour system very small leak",P0500:"Vehicle speed sensor fault",P0505:"Idle control system fault",P0507:"Idle speed higher than expected",P0562:"System voltage low",P0700:"Transmission control system fault"};
-
-/* ---------- trip maths (shared by live, demo and import) ---------- */
-class Trip{
-  constructor(start,src){Object.assign(this,{id:start,start,src,dist:0,fuel:0,dur:0,idle:0,maxV:0,maxR:0,maxC:null,brakes:0,accels:0,s:{t:[],v:[],r:[],c:[],f:[]}});this._lt=null;this._lv=null;this._ls=-9;this._le=-9}
-  add(t,d){
-    if(this._lt!=null){const dt=t-this._lt;if(dt<0.4)return;
-      if(dt<30){const v=d.speed??0;this.dist+=v*dt/3600;this.dur+=dt;if(d.lph!=null)this.fuel+=d.lph*dt/3600;if(v<1&&(d.rpm??0)>300)this.idle+=dt;
-        if(this._lv!=null&&t-this._le>3){const a=(v-this._lv)/dt;if(a<-11){this.brakes++;this._le=t}else if(a>9){this.accels++;this._le=t}}}}
-    this._lt=t;this._lv=d.speed??0;
-    if(d.speed>this.maxV)this.maxV=d.speed;if(d.rpm>this.maxR)this.maxR=d.rpm;if(d.coolant!=null&&(this.maxC==null||d.coolant>this.maxC))this.maxC=d.coolant;
-    if(t-this._ls>=2){this._ls=t;const r=x=>x==null?null:Math.round(x*10)/10;this.s.t.push(Math.round(t));this.s.v.push(r(d.speed));this.s.r.push(d.rpm==null?null:Math.round(d.rpm));this.s.c.push(r(d.coolant));this.s.f.push(r(d.lph))}}
-  get avg(){return this.dist>0.3&&this.fuel>0?this.fuel/this.dist*100:null}
-  data(){const o={};for(const k of Object.keys(this))if(k[0]!=="_")o[k]=this[k];o.avg=this.avg;o.score=score(this);return o}
-}
-const score=t=>{const per10=(t.brakes+t.accels)/Math.max(t.dist/10,1),idlePct=t.dur?t.idle/t.dur*100:0;return Math.max(0,Math.min(100,Math.round(100-6*per10-Math.max(0,idlePct-20)*0.5)))};
-
-/* ---------- scanner link: Bluetooth LE ---------- */
-const SERVICES=[0xfff0,0xffe0,0x18f0,0xae30,0xabf0,"e7810a71-73ae-499d-8c15-faa9aef0c3f2","49535343-fe7d-4ae5-8fa9-9fafd205e455","6e400001-b5a3-f393-e0a9-e50e24dcca9e"];
-function log(s){const p=$("#log");if(p.dataset.fresh!=="1"){p.textContent="";p.dataset.fresh="1"}p.textContent+=s+"\n";if(p.textContent.length>20000)p.textContent=p.textContent.slice(-15000);p.scrollTop=p.scrollHeight}
-class BleLink{
-  constructor(){this.buf="";this.q=Promise.resolve();this.waiter=null;this.dec=new TextDecoder();this.enc=new TextEncoder()}
-  async open(){
-    this.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SERVICES});
-    log("Device: "+(this.dev.name||"unnamed"));
-    this.dev.addEventListener("gattserverdisconnected",()=>{log("Scanner disconnected");this.onclose&&this.onclose()});
-    const srv=await this.dev.gatt.connect();const svcs=await srv.getPrimaryServices();
-    for(const s of svcs){const cs=await s.getCharacteristics();log("Service "+s.uuid+" · "+cs.length+" channels");
-      const n=cs.find(c=>c.properties.notify||c.properties.indicate),w=cs.find(c=>c.properties.writeWithoutResponse||c.properties.write);
-      if(n&&w){this.n=n;this.w=w;break}}
-    if(!this.n)throw new Error("This device did not offer a data channel the app recognises.");
-    await this.n.startNotifications();
-    this.n.addEventListener("characteristicvaluechanged",e=>{this.buf+=this.dec.decode(e.target.value);if(this.buf.includes(">")&&this.waiter){const r=this.buf.replace(/>/g,"").trim();this.buf="";const w=this.waiter;this.waiter=null;w(r)}});
-  }
-  cmd(c,ms=5000){const run=()=>new Promise(async res=>{this.buf="";const t=setTimeout(()=>{this.waiter=null;res("")},ms);this.waiter=r=>{clearTimeout(t);res(r)};
-      try{const data=this.enc.encode(c+"\r");if(this.w.properties.writeWithoutResponse&&this.w.writeValueWithoutResponse)await this.w.writeValueWithoutResponse(data);else await this.w.writeValue(data)}catch(e){clearTimeout(t);this.waiter=null;res("")}});
-    return this.q=this.q.then(run,run)}
-  close(){try{this.dev&&this.dev.gatt.disconnect()}catch(e){}}
-}
-/* ---------- scanner link: built-in demo drive ---------- */
-class DemoLink{
-  constructor(){this.t0=Date.now();this.codes=["P0420"];this.sup=[0x04,0x05,0x06,0x07,0x0B,0x0C,0x0D,0x0E,0x0F,0x11,0x2F,0x42,0x46]}
-  async open(){}
-  st(){const t=(Date.now()-this.t0)/1000*(this.rate||1),c=t%150;let v;
-    if(c<12)v=0;else if(c<24)v=(c-12)*5;else if(c<70)v=60+8*Math.sin(c/5);else if(c<82)v=60+(c-70)*4;else if(c<120)v=108+4*Math.sin(c/3);else if(c<124)v=108-(c-120)*15;else if(c<136)v=48-(c-124)*4;else v=0;
-    v=Math.max(0,v);const acc=c>=12&&c<24||c>=70&&c<82,gear=v<20?1:v<40?2:v<60?3:v<80?4:v<100?5:6,ratio=[0,125,70,46,34,27,22][gear];
-    const rpm=v<1?720+20*Math.sin(t):Math.max(900,v*ratio*.72),load=v<1?22:acc?78:c>=120&&c<136?8:30+v/5,map=20+load*.75;
-    return {v,rpm,load,map,thr:v<1?0:acc?48:c>=120?0:14+v/9,cool:Math.min(90,32+t/4),fuel:62-t/400,volt:14.1,iat:18,amb:6}}
-  mask(base){const b=[0,0,0,0];for(const p of this.sup.concat([0x20,0x40]))if(p>base&&p<=base+32){const i=p-base-1;b[i>>3]|=0x80>>(i&7)}return b.map(h2).join("")}
-  async cmd(c){c=c.trim().toUpperCase();const s=this.st();
-    if(c.startsWith("AT"))return c==="ATRV"?"14.1V":c==="ATDPN"?"A6":c==="ATZ"||c==="ATI"?"ELM327 v1.5 (demo)":"OK";
-    if(c==="03")return "43"+h2(this.codes.length)+this.codes.map(x=>h2(("PCBU".indexOf(x[0])<<6)|(+x[1]<<4)|parseInt(x[2],16))+x.slice(3)).join("");
-    if(c==="07")return "4700";if(c==="04"){this.codes=[];return "44"}
-    if(c==="0902")return "014\r0:490201444D4F\r1:43415250554C53\r2:45303030303031";
-    if(c==="0101")return "4101"+h2((this.codes.length?0x80:0)|this.codes.length)+"076500";
-    if(c==="0100"||c==="0120"||c==="0140")return "41"+c.slice(2)+this.mask(parseInt(c.slice(2),16));
-    const m={"04":h2(s.load*2.55),"05":h2(s.cool+40),"06":h2(128+2),"07":h2(128-4),"0B":h2(s.map),"0C":h4(s.rpm*4),"0D":h2(s.v),"0E":h2((12+64)*2),"0F":h2(s.iat+40),"11":h2(s.thr*2.55),"2F":h2(s.fuel*2.55),"42":h4(s.volt*1000),"46":h2(s.amb+40)}[c.slice(2)];
-    return c.startsWith("01")&&m?"41"+c.slice(2)+m:"NO DATA"}
-  close(){}
-}
-const h2=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).toUpperCase().padStart(2,"0"),h4=n=>Math.max(0,Math.min(65535,Math.round(n))).toString(16).toUpperCase().padStart(4,"0");
-
-/* ---------- live session ---------- */
-let link=null,running=false,trip=null,live={},supported=null,isCan=true,wake=null,misses={};
-const have=k=>!supported||supported.includes(parseInt(PIDS[k].p,16));
-async function readPid(k){if(!have(k)||misses[k]>3)return;const b=parsePid(await link.cmd("01"+PIDS[k].p,1500),PIDS[k].p);if(b){live[k]=PIDS[k].f(...b);misses[k]=0}else misses[k]=(misses[k]||0)+1}
-async function start(kind){
-  if(link)return;
-  if(kind==="ble"&&!navigator.bluetooth)return showConnectHelp();
-  const L=kind==="demo"?new DemoLink():new BleLink();
-  setPill("…","Connecting");$("#bConnect").disabled=true;
-  try{
-    await L.open();link=L;L.onclose=()=>stop(true);
-    for(const c of ["ATZ","ATE0","ATL0","ATS0","ATH0","ATSP0"])log(c+" → "+(await link.cmd(c,c==="ATZ"?6000:3000)).replace(/[\r\n]+/g," "));
-    const r0=await link.cmd("0100",12000);log("0100 → "+r0.replace(/[\r\n]+/g," "));
-    if(!parsePid(r0,"00"))throw new Error("The scanner answered but the car did not. Turn the ignition on and try again.");
-    supported=parseSupported(r0,0);
-    if(supported.includes(0x20)){const a=parseSupported(await link.cmd("0120"),0x20);supported.push(...a);if(a.includes(0x40))supported.push(...parseSupported(await link.cmd("0140"),0x40))}
-    const pn=(await link.cmd("ATDPN")).replace(/[^0-9A-F]/gi,"");isCan=parseInt(pn.slice(-1),16)>=6;log("Protocol "+pn+" · sensors: "+supported.map(h2).join(" "));
-  }catch(e){log("Connect failed: "+e.message);try{L.close()}catch(_){}link=null;setPill("","Not connected");$("#bConnect").disabled=false;
-    if(e.name!=="NotFoundError")alert(e.message||"Could not connect to the scanner.");return}
-  running=true;live={};misses={};trip=new Trip(Date.now(),kind==="demo"?"demo":"live");
-  setPill(kind==="demo"?"demo":"live",kind==="demo"?"Demo drive":"Connected");
-  $("#connectBox").style.display="none";$("#tripBox").style.display="";$("#bConnect").disabled=false;
-  try{wake=await navigator.wakeLock.request("screen")}catch(e){}
-  loop();
-}
-async function loop(){let i=0;const t0=performance.now();
-  while(running&&link){
-    for(const k of FAST){if(!running)return;await readPid(k)}
-    await readPid(SLOW[i++%SLOW.length]);
-    if(!running)return;
-    live.lph=live.rpm>300?lphFrom(live):live.rpm!=null?0:null;
-    trip.add((performance.now()-t0)/1000*(link.rate||1),live);renderDrive();
-    if(link instanceof DemoLink)await new Promise(r=>setTimeout(r,500))}}
-async function stop(lost){
-  if(!link&&!running)return;running=false;const L=link;link=null;
-  try{wake&&wake.release()}catch(e){}wake=null;
-  if(!lost)try{L&&L.close()}catch(e){}
-  if(trip&&(trip.dist>0.2||trip.dur>60)){await Trips.put(trip.data());renderTrips()}
-  trip=null;live={};setPill("","Not connected");$("#connectBox").style.display="";$("#tripBox").style.display="none";renderDrive()}
-addEventListener("pagehide",()=>{if(trip&&(trip.dist>0.2||trip.dur>60))Trips.put(trip.data())});
-
-function setPill(cls,txt){const p=$("#pill");p.className="pill "+(cls==="…"?"":cls);p.lastElementChild.textContent=txt}
-function showConnectHelp(){openSheet(`<h1 style="margin:10px 0">Connecting on iPhone</h1>
-<p>iPhone browsers (Safari and Chrome) are not allowed to talk to Bluetooth devices, so a home-screen web app cannot reach the scanner by itself.</p>
-<p>The free <b>Bluefy</b> browser from the App Store can. To use the scanner live:</p>
-<ol><li>Install <b>Bluefy – Web BLE Browser</b> (free).</li><li>Open this same page address inside Bluefy and bookmark it.</li><li>Plug in the scanner, turn the ignition on, tap <b>Connect scanner</b> and pick <b>VEEPEAK</b> from the list.</li></ol>
-<p class="note">Close Car Scanner first: the scanner can only talk to one app at a time.</p>
-<p class="note">Trips are stored per browser, so keep using the app inside Bluefy. Use Backup to move data.</p>
-<p class="note" style="word-break:break-all">${esc(location.href)}</p>`)}
-
-/* ---------- drive screen ---------- */
-const TILES=[["coolant","Coolant","°C",0,[0,120]],["load","Engine load","%",0,[0,100]],["throttle","Throttle","%",0,[0,100]],["volt","Battery","V",1,[11,15]],["fuel","Fuel level","%",0,[0,100]],["iat","Intake air","°C",0,[-20,60]],["ltft","Long fuel trim","%",1,null],["timing","Ignition timing","°",1,null]];
-$("#tiles").innerHTML=TILES.map(([k,n,u,,rng])=>`<div class="tile"><small>${n}</small><b id="x-${k}">–<span>${u}</span></b>${rng?`<div class="bar"><i id="b-${k}"></i></div>`:""}</div>`).join("");
-function renderDrive(){
-  const d=live;$("#vSpeed").textContent=fx(d.speed);$("#vRpm").textContent=d.rpm==null?"–":Math.round(d.rpm/10)*10;
-  $("#gSpeed").setAttribute("stroke-dasharray",Math.min(100,(d.speed||0)/180*100)+" 100");$("#gRpm").setAttribute("stroke-dasharray",Math.min(100,(d.rpm||0)/7000*100)+" 100");
-  $("#gRpm").setAttribute("stroke",d.rpm>5500?"#ff5d6c":"#5aa9ff");
-  const moving=d.speed>5&&d.lph!=null;$("#lNow").textContent=moving?"Now · L/100":"Now · L/h";$("#vNow").textContent=d.lph==null?"–":moving?fx(Math.min(99,d.lph/d.speed*100),1):fx(d.lph,1);
-  $("#vAvg").innerHTML=trip&&trip.avg?fx(trip.avg,1)+"<span>L/100</span>":"–";
-  const avg=(trip&&trip.avg)||histAvg;$("#vRange").innerHTML=d.fuel!=null&&avg?Math.round(d.fuel/100*S.tank/avg*100/10)*10+"<span>km</span>":"–";
-  if(trip){$("#vDist").innerHTML=fx(trip.dist,1)+"<span>km</span>";$("#vTime").textContent=hms(trip.dur);$("#vFuel").innerHTML=fx(trip.fuel,2)+"<span>L</span>"}
-  for(const [k,,u,dp,rng] of TILES){$("#x-"+k).innerHTML=fx(d[k],dp)+`<span>${u}</span>`;if(rng){const b=$("#b-"+k),p=d[k]==null?0:Math.max(0,Math.min(100,(d[k]-rng[0])/(rng[1]-rng[0])*100));b.style.width=p+"%";
-    b.style.background=k==="coolant"&&d[k]>108?"var(--bad)":k==="volt"&&d[k]!=null&&(d[k]<12||d[k]>14.9)?"var(--warn)":k==="fuel"&&d[k]<12?"var(--warn)":"var(--blue)"}}}
-
-/* ---------- trips screen ---------- */
-let histAvg=null,tripsCache=[];
-const when=ts=>new Date(ts).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-async function renderTrips(){
-  const ts=tripsCache=await Trips.all();$("#tripsEmpty").style.display=ts.length?"none":"";$("#tripsBody").style.display=ts.length?"":"none";if(!ts.length){histAvg=null;return}
-  const dist=ts.reduce((a,t)=>a+t.dist,0),fuel=ts.reduce((a,t)=>a+t.fuel,0),dur=ts.reduce((a,t)=>a+t.dur,0),idle=ts.reduce((a,t)=>a+t.idle,0);
-  histAvg=dist>1&&fuel>0?fuel/dist*100:null;
-  $("#aDist").innerHTML=fx(dist,dist<100?1:0)+"<span>km</span>";$("#aAvg").innerHTML=histAvg?fx(histAvg,1)+"<span>L/100</span>":"–";
-  $("#aScore").innerHTML=Math.round(ts.reduce((a,t)=>a+t.score*Math.max(t.dist,.1),0)/ts.reduce((a,t)=>a+Math.max(t.dist,.1),0))+"<span>/100</span>";
-  $("#aFuel").innerHTML=fx(fuel,1)+"<span>L</span>";$("#aCost").innerHTML=S.price?"$"+fx(fuel*S.price,2):"–";$("#aIdle").innerHTML=dur?Math.round(idle/dur*100)+"<span>%</span>":"–";
-  const last=ts.filter(t=>t.avg).slice(0,14).reverse(),mx=Math.max(...last.map(t=>t.avg),1),mn=Math.min(...last.map(t=>t.avg));
-  $("#bars").innerHTML=last.map(t=>`<div class="${t.avg===mn&&last.length>1?"best":""}" style="height:${Math.max(4,t.avg/mx*100)}%" >${last.length<=8?`<span>${fx(t.avg,1)}</span>`:""}</div>`).join("")||`<div class="note" style="background:none;height:auto;flex:none">Not enough data yet.</div>`;
-  $("#barsFrom").textContent=last.length?when(last[0].start):"";
-  $("#tripList").innerHTML=ts.map(t=>`<div class="trip" data-id="${t.id}"><div><b>${when(t.start)}</b><small>${fx(t.dist,1)} km · ${hms(t.dur)}${t.src==="demo"?" · demo":""}</small></div><div class="r"><b>${t.avg?fx(t.avg,1):"–"}</b><small>L/100 km</small></div></div>`).join("")}
-$("#tripList").onclick=e=>{const r=e.target.closest(".trip");if(r)showTrip(tripsCache.find(t=>t.id==r.dataset.id))};
-function showTrip(t){
-  const k=(n,v)=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`;
-  openSheet(`<h1 style="margin:10px 0 2px">${when(t.start)}</h1><p class="note" style="margin-top:0">${t.src==="demo"?"Demo drive":"Recorded live"}</p>
-  <div class="row3">${k("Distance",fx(t.dist,1)+"<span>km</span>")}${k("Time",hms(t.dur))}${k("Average",(t.avg?fx(t.avg,1):"–")+"<span>L/100</span>")}</div>
-  <div class="row3">${k("Fuel",fx(t.fuel,2)+"<span>L</span>")}${k("Cost",S.price?"$"+fx(t.fuel*S.price,2):"–")}${k("Smoothness",t.score+"<span>/100</span>")}</div>
-  <div class="row3">${k("Avg speed",fx(t.dur?t.dist/(t.dur/3600):null)+"<span>km/h</span>")}${k("Top speed",fx(t.maxV)+"<span>km/h</span>")}${k("Idle",hms(t.idle))}</div>
-  <div class="row3">${k("Hard brakes",t.brakes)}${k("Hard starts",t.accels)}${k("Peak temp",fx(t.maxC)+"<span>°C</span>")}</div>
-  <h2>Speed (km/h)</h2><div class="card"><canvas id="c1"></canvas></div>
-  <h2>Engine speed (rpm)</h2><div class="card"><canvas id="c2"></canvas></div>
-  <h2>Fuel flow (L/h)</h2><div class="card"><canvas id="c3"></canvas></div>
-  <h2>Coolant (°C)</h2><div class="card"><canvas id="c4"></canvas></div>
-  <button class="btn danger" id="bDel">Delete this trip</button>`);
-  chart($("#c1"),t.s.t,t.s.v,"#35e0a1");chart($("#c2"),t.s.t,t.s.r,"#5aa9ff");chart($("#c3"),t.s.t,t.s.f,"#ffb547");chart($("#c4"),t.s.t,t.s.c,"#ff5d6c");
-  $("#bDel").onclick=async()=>{if(confirm("Delete this trip?")){await Trips.del(t.id);closeSheet();renderTrips()}}}
-function chart(cv,xs,ys,color){
-  const dpr=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
-  const pts=xs.map((x,i)=>[x,ys[i]]).filter(p=>p[1]!=null);g.font="11px -apple-system,sans-serif";g.fillStyle="#8a95a9";
-  if(pts.length<2){g.textAlign="center";g.fillText("No data for this trip",w/2,h/2);return}
-  let mn=Infinity,mx=-Infinity;for(const p of pts){if(p[1]<mn)mn=p[1];if(p[1]>mx)mx=p[1]}if(mx-mn<1){mx+=1;mn-=1}
-  const x0=pts[0][0],x1=pts[pts.length-1][0]||1,pad=18,X=x=>(x-x0)/(x1-x0||1)*w,Y=y=>pad+(1-(y-mn)/(mx-mn))*(h-18-pad);
-  g.beginPath();pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));g.strokeStyle=color;g.lineWidth=1.8;g.lineJoin="round";g.stroke();
-  g.lineTo(w,h-18);g.lineTo(0,h-18);g.closePath();const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,color+"44");gr.addColorStop(1,color+"00");g.fillStyle=gr;g.fill();
-  g.fillStyle="#8a95a9";g.textAlign="left";g.fillText("max "+fx(mx,mx<20?1:0),2,11);g.fillText("0:00",2,h-3);g.textAlign="right";g.fillText("min "+fx(mn,mx<20?1:0),w-2,11);g.fillText(hms(x1-x0),w-2,h-3)}
-
-/* ---------- health screen ---------- */
-const chip=(s,t)=>`<span class="chip ${s}">${t}</span>`;
-async function health(){
-  if(!link)return alert("Connect the scanner first (Drive tab).");
-  $("#bHealth").disabled=true;$("#healthNote").textContent="Checking…";
-  const was=running;running=false;await link.cmd("ATI",1500);
-  try{
-    const st=parsePid(await link.cmd("0101"),"01"),stored=parseDtcs(await link.cmd("03",6000),3,isCan),pending=parseDtcs(await link.cmd("07",6000),7,isCan);
-    const vin=parseVin(await link.cmd("0902",6000)),rv=parseFloat(await link.cmd("ATRV"));
-    for(const k of ["coolant","stft","ltft","volt","rpm"])await readPid(k);
-    const v=live.volt??(isFinite(rv)?rv:null),on=live.rpm>300,rows=[];
-    rows.push(["Check-engine light",st?(st[0]&0x80?"On":"Off"):"No answer",!st?"na":st[0]&0x80?"bad":"",!st?"Unknown":st[0]&0x80?"Fault":"OK"]);
-    rows.push(["Battery / charging",v==null?"No reading":fx(v,1)+" V · engine "+(on?"running":"off"),v==null?"na":on?(v<13.2||v>14.9?"warn":""):(v<12.2?"warn":""),v==null?"Unknown":on?(v<13.2?"Low charge":v>14.9?"High":"OK"):(v<12.2?"Low":"OK")]);
-    rows.push(["Engine temperature",live.coolant==null?"No reading":fx(live.coolant)+" °C",live.coolant==null?"na":live.coolant>108?"bad":"",live.coolant==null?"Unknown":live.coolant>108?"Hot":live.coolant<70&&on?"Warming up":"OK"]);
-    const tr=live.ltft==null?null:live.ltft+(live.stft||0);rows.push(["Fuel mixture correction",tr==null?"No reading":(tr>0?"+":"")+fx(tr,1)+" %",tr==null?"na":Math.abs(tr)>15?"warn":"",tr==null?"Unknown":Math.abs(tr)>15?"Watch":"OK"]);
-    $("#healthCard").style.display="";$("#healthCard").innerHTML=rows.map(r=>`<div class="hrow"><div>${r[0]}<small>${r[1]}</small></div>${chip(r[2],r[3])}</div>`).join("");
-    const all=[...stored.map(c=>[c,"stored"]),...pending.filter(c=>!stored.includes(c)).map(c=>[c,"pending"])];
-    $("#dtcCard").innerHTML=all.length?all.map(([c,k])=>`<div class="hrow"><div><span class="code">${c}</span> ${chip(k==="stored"?"bad":"warn",k)}<small>${DTC_TEXT[c]||"Manufacturer or less common code"} · <a target="_blank" rel="noopener" href="https://www.google.com/search?q=${c}+fault+code">look up</a></small></div></div>`).join(""):`<div class="hrow"><div>No fault codes<small>Nothing stored or pending in the engine computer.</small></div>${chip("","OK")}</div>`;
-    $("#bClear").style.display=all.length?"":"none";
-    $("#vehCard").innerHTML=`<div class="hrow"><div>VIN<small>${vin||"Not reported"}</small></div></div><div class="hrow"><div>Sensors available<small>${supported?supported.length:"?"} standard readings</small></div></div>`;
-    $("#healthNote").textContent="Checked "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+". Covers the engine computer only.";
-  }catch(e){$("#healthNote").textContent="Check failed: "+e.message}
-  $("#bHealth").disabled=false;if(was&&link){running=true;loop2()}}
-/* resume polling after a health check without restarting the trip clock */
-function loop2(){const t=trip,base=t._lt||0,t0=performance.now();(async()=>{let i=0;while(running&&link&&trip===t){for(const k of FAST){if(!running)return;await readPid(k)}await readPid(SLOW[i++%SLOW.length]);if(!running)return;
-  live.lph=live.rpm>300?lphFrom(live):live.rpm!=null?0:null;t.add(base+(performance.now()-t0)/1000*(link.rate||1),live);renderDrive();if(link instanceof DemoLink)await new Promise(r=>setTimeout(r,500))}})()}
-$("#bHealth").onclick=health;
-$("#bClear").onclick=async()=>{if(!link)return alert("Connect the scanner first.");
-  if(!confirm("Clear fault codes?\n\nThis turns off the check-engine light and erases the saved fault details. If the problem is still there the code will come back. Do it with the engine off and ignition on."))return;
-  const was=running;running=false;await link.cmd("ATI",1500);const r=await link.cmd("04",6000);log("04 → "+r);running=was;if(was)loop2();
-  alert(/44/.test(r)?"Codes cleared.":"The car did not confirm. Try with the engine off and ignition on.");health()};
-
-/* ---------- backup ---------- */
-$("#bBackup").onclick=async()=>{const blob=new Blob([JSON.stringify({app:"carpulse",v:1,settings:S,trips:await Trips.all()})],{type:"application/json"}),name="car-pulse-backup-"+new Date().toISOString().slice(0,10)+".json";
-  try{const file=new File([blob],name,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name==="AbortError")return}
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click()};
-$("#bRestore").onclick=()=>$("#fRestore").click();
-$("#fRestore").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{const d=JSON.parse(await f.text());if(d.app!=="carpulse")throw new Error("Not a Car Pulse backup file.");
-  if(!confirm(`Add ${d.trips.length} trips from this backup?`))return;for(const t of d.trips)await Trips.put(t);Object.assign(S,d.settings||{});saveS();loadSettings();renderTrips();alert("Backup restored.")}catch(err){alert("Restore failed: "+err.message)}};
-
-/* ---------- settings, terminal, navigation ---------- */
-function loadSettings(){$("#sTank").value=S.tank;$("#sDisp").value=S.disp;$("#sPrice").value=S.price}
-for(const [id,k] of [["sTank","tank"],["sDisp","disp"],["sPrice","price"]])$("#"+id).onchange=e=>{const v=parseFloat(e.target.value);S[k]=isFinite(v)&&v>0?v:(k==="price"?"":S[k]);saveS();loadSettings();renderTrips()};
-$("#bSend").onclick=async()=>{const c=$("#termIn").value.trim();if(!c)return;if(!link)return alert("Connect the scanner first.");const was=running;running=false;await link.cmd("ATI",1500);log("> "+c);log(await link.cmd(c,8000)||"(no answer)");$("#termIn").value="";running=was;if(was)loop2()};
-$("#bCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("#log").textContent);$("#bCopy").textContent="Copied";setTimeout(()=>$("#bCopy").textContent="Copy log",1500)}catch(e){alert("Could not copy. Select the text and copy it by hand.")}};
-const TITLES={drive:"Drive",trips:"Trips",health:"Health",more:"More"};
-function tab(t){document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id==="t-"+t));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#title").textContent=TITLES[t];$("main").scrollTop=0}
-$("#nav").onclick=e=>{const b=e.target.closest("button");if(b)tab(b.dataset.t)};
-function openSheet(html){$("#sheetBody").innerHTML=html;$("#sheet").classList.add("on");$("#sheetBody").scrollTop=0}
-function closeSheet(){$("#sheet").classList.remove("on")}
-$("#bBack").onclick=closeSheet;
-$("#bConnect").onclick=()=>start("ble");$("#bDemo").onclick=()=>start("demo");$("#bEnd").onclick=()=>stop(false);
-loadSettings();renderDrive();renderTrips();
-try{if(location.protocol.startsWith("http")&&navigator.serviceWorker)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
-</script>
+<div class="sheet" id="sheet"><header><button class="back" id="bBack">‹ Back</button></header><div class="body" id="sheetBody"></div></div>
+<script src="obd.js"></script>
+<script src="core.js"></script>
+<script src="ui.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // Works offline: tries the internet first (to get updates), falls back to the saved copy.
-const CACHE="car-pulse-v2";
-self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["./","./index.html","./manifest.json","./icon-180.png","./icon-192.png","./icon-512.png"])))});
+const CACHE="car-pulse-v3";
+self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(["./","./index.html","./obd.js","./core.js","./ui.js","./manifest.json","./icon-180.png","./icon-192.png","./icon-512.png"])))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{
  if(e.request.method!=="GET"||!e.request.url.startsWith(self.location.origin))return;
