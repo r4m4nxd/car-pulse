@@ -86,17 +86,27 @@ class BleLink{
     let svcs=[];try{svcs=await srv.getPrimaryServices()}catch(e){log("List services: not available · "+((e&&e.message)||e))}
     if(!svcs||!svcs.length){svcs=[];for(const u of SERVICES){try{svcs.push(await srv.getPrimaryService(u))}catch(e){}}}
     log("Services: "+(svcs.map(s=>s.uuid).join(", ")||"none"));
+    // a scanner can expose several serial-style services and only one is live, so rank the usual ones first and probe each until one answers
+    const norm=u=>{u=String(u).toLowerCase();return u.length<=8?U16(parseInt(u,16)):u},short=u=>norm(u).startsWith("0000")&&norm(u).endsWith("-0000-1000-8000-00805f9b34fb")?norm(u).slice(4,8):norm(u).slice(0,8),PREF=[0xfff0,0xffe0,0x18f0].map(U16),cands=[];
     for(const s of svcs){let cs=[];try{cs=await s.getCharacteristics()}catch(e){}
       if(!cs||!cs.length){cs=[];for(const u of CHARS){try{cs.push(await s.getCharacteristic(u))}catch(e){}}}
-      log("Service "+s.uuid+" · channels "+cs.map(c=>c.uuid.slice(4,8)+(c.properties.notify||c.properties.indicate?"n":"")+(c.properties.write||c.properties.writeWithoutResponse?"w":"")).join(" "));
+      log("Service "+short(s.uuid)+" · channels "+cs.map(c=>short(c.uuid)+":"+(c.properties.notify||c.properties.indicate?"n":"")+(c.properties.write?"w":"")+(c.properties.writeWithoutResponse?"x":"")).join(" "));
       const n=cs.find(c=>c.properties.notify||c.properties.indicate),w=cs.find(c=>c.properties.writeWithoutResponse||c.properties.write);
-      if(n&&w){this.n=n;this.w=w;break}}
-    if(!this.n)throw new Error("Connected, but found no data channel on this scanner. Send the log from Lab → Terminal and log.");
-    await step("Start notifications",()=>this.n.startNotifications());
-    this.n.addEventListener("characteristicvaluechanged",e=>{this.buf+=this.dec.decode(e.target.value);if(this.buf.includes(">")&&this.waiter){const r=this.buf.replace(/>/g,"").trim();this.buf="";const w=this.waiter;this.waiter=null;w(r)}});
+      if(n&&w)cands.push({s,n,w,rank:PREF.indexOf(norm(s.uuid))<0?9:PREF.indexOf(norm(s.uuid))})}
+    cands.sort((a,b)=>a.rank-b.rank);
+    if(!cands.length)throw new Error("Connected, but found no data channel on this scanner. Send the log from Lab → Terminal and log.");
+    const onData=e=>{const str=this.dec.decode(e.target.value);this.rx+=str.length;this.buf+=str;if(this.buf.includes(">")&&this.waiter){const r=this.buf.replace(/>/g,"").trim();this.buf="";const w=this.waiter;this.waiter=null;w(r)}};
+    let live=false;
+    for(const c of cands){this.n=c.n;this.w=c.w;
+      try{await c.n.startNotifications();c.n.addEventListener("characteristicvaluechanged",onData)}catch(e){log("Channel "+short(c.s.uuid)+": notifications failed · "+((e&&e.message)||e));continue}
+      for(const mode of ["auto","with","without"]){this.mode=mode;this.rx=0;const r=await this.cmd("ATI",2500);log("Channel "+short(c.s.uuid)+" · write "+mode+" · "+this.rx+" bytes back"+(r?" · "+r.replace(/[\r\n]+/g," "):""));if(this.rx>0){live=true;break}}
+      if(live)break;try{c.n.removeEventListener("characteristicvaluechanged",onData);await c.n.stopNotifications()}catch(e){}}
+    if(!live)throw new Error("Connected to the scanner, but it did not answer on any channel. Make sure no other app is connected to it, then send the log from Lab → Terminal and log.");
   }
   cmd(c,ms=5000){const run=()=>new Promise(async res=>{this.buf="";const t=setTimeout(()=>{this.waiter=null;res("")},ms);this.waiter=r=>{clearTimeout(t);res(r)};
-      try{const data=this.enc.encode(c+"\r");if(this.w.properties.writeWithoutResponse&&this.w.writeValueWithoutResponse)await this.w.writeValueWithoutResponse(data);else await this.w.writeValue(data)}catch(e){clearTimeout(t);this.waiter=null;res("")}});
+      try{const data=this.enc.encode(c+"\r"),w=this.w,m=this.mode||"auto";
+        if((m==="without"||(m==="auto"&&w.properties.writeWithoutResponse))&&w.writeValueWithoutResponse)await w.writeValueWithoutResponse(data);
+        else if(m==="with"&&w.writeValueWithResponse)await w.writeValueWithResponse(data);else await w.writeValue(data)}catch(e){clearTimeout(t);this.waiter=null;res("")}});
     return this.q=this.q.then(run,run)}
   close(){try{this.dev&&this.dev.gatt.disconnect()}catch(e){}}
 }
